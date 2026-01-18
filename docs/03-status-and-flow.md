@@ -26,10 +26,10 @@ flowchart LR
   end
 
   webhook[Webhook Trigger] --> n8n
-  n8n -->|HTTP Request\nGET /public/v3/clients/:id| mock
-  mock -->|{ client.custom_fields }| n8n
-  n8n -->|IF Custom Field = Uploaded| wait[Wait/Resume (optional)]
-  wait --> notify[Notify (Kakao/Email)\nvia SOLAPI/SMTP]
+  n8n -->|"HTTP Request (GET /clients/:id)"| mock
+  mock -->|"{ client.custom_fields }"| n8n
+  n8n -->|"IF Custom Field = Uploaded"| wait[Wait / Resume]
+  wait --> notify["Notify (Kakao/Email) via SOLAPI/SMTP"]
 ```
 
 ## Items to confirm
