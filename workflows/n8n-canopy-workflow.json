@@ -1,0 +1,199 @@
+{
+    "name": "Canopy CRM Automation Final",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "canopy-trigger",
+                "options": {}
+            },
+            "name": "Canopy_Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                100,
+                300
+            ],
+            "id": "node-canopy-webhook"
+        },
+        {
+            "parameters": {
+                "url": "=http://canopy-crm-mock:3080/public/v3/clients/{{ $json.body?.client_id || $json.body?.clientId || $json.client_id || $json.clientId || 'client_1' }}",
+                "options": {}
+            },
+            "name": "Canopy_Get_Profile",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                350,
+                300
+            ],
+            "id": "node-canopy-get-profile"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ ($json.client?.custom_fields || []).find(f => f.field_id === 'field_upload_status')?.value }}",
+                            "operation": "equal",
+                            "value2": "Uploaded"
+                        }
+                    ]
+                }
+            },
+            "name": "Canopy_If_Status",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                600,
+                300
+            ],
+            "id": "node-canopy-if"
+        },
+        {
+            "parameters": {
+                "resume": "webhook",
+                "webhookSuffix": "canopy-notify"
+            },
+            "name": "Canopy_Wait",
+            "type": "n8n-nodes-base.wait",
+            "typeVersion": 1,
+            "position": [
+                850,
+                200
+            ],
+            "id": "node-canopy-wait"
+        },
+        {
+            "parameters": {
+                "fromEmail": "annie@example.com",
+                "toEmail": "={{ $(\"Canopy_Get_Profile\").first().json.client?.email || 'user@example.com' }}",
+                "subject": "Status Change in Canopy",
+                "text": "=A new value has been detected in your Canopy profile for client: {{ $(\"Canopy_Get_Profile\").first().json.client?.name }}\n\nStatus: {{ ($(\"Canopy_Get_Profile\").first().json.client?.custom_fields || []).find(f => f.field_id === 'field_upload_status')?.value }}",
+                "options": {}
+            },
+            "name": "Canopy_Email",
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 2,
+            "position": [
+                1100,
+                200
+            ],
+            "id": "node-canopy-email"
+        },
+        {
+            "parameters": {
+                "jsCode": "const crypto = require('crypto');\n\nconst apiKey = process.env.SOLAPI_API_KEY;\nconst apiSecret = process.env.SOLAPI_API_SECRET;\nconst pfId = process.env.SOLAPI_PF_ID;\nconst templateId = process.env.SOLAPI_TEMPLATE_ID;\nconst from = process.env.SOLAPI_FROM;\nconst templateText = process.env.SOLAPI_TEMPLATE_TEXT;\n\n// Canopy_Get_Profile 노드 데이터 참조\nconst clientNode = $(\"Canopy_Get_Profile\").first().json.client || {};\nconst statusValue = (clientNode.custom_fields || []).find(f => f.field_id === 'field_upload_status')?.value || 'Unknown';\n\nconst primaryPhone = (clientNode.phones || []).find(p => p.is_primary)?.number;\nconst anyPhone = (clientNode.phones || []).find(p => p.number)?.number;\nconst to = primaryPhone || anyPhone || clientNode.phone || clientNode.phone_number || process.env.SOLAPI_TO;\n\nif (!apiKey || !apiSecret || !pfId || !templateId || !from || !to) {\n  throw new Error('Missing SOLAPI_* environment variables or recipient phone');\n}\n\nconst text = templateText || `프로필 값이 변경되었습니다: ${statusValue}`;\n\nconst dateTime = new Date().toISOString();\nconst salt = crypto.randomBytes(16).toString('hex');\nconst signature = crypto.createHmac('sha256', apiSecret).update(dateTime + salt).digest('hex');\nconst authHeader = `HMAC-SHA256 apiKey=${apiKey}, date=${dateTime}, salt=${salt}, signature=${signature}`;\n\nconst body = {\n  messages: [\n    {\n      to,\n      from,\n      type: 'ATA',\n      text,\n      kakaoOptions: {\n        pfId,\n        templateId,\n        variables: {\n          status: statusValue\n        }\n      }\n    }\n  ]\n};\n\nreturn { authHeader, body };"
+            },
+            "name": "Canopy_Solapi_Payload",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1350,
+                200
+            ],
+            "id": "node-canopy-solapi-payload"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.solapi.com/messages/v4/send-many/detail",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "={{ $json.authHeader }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "jsonParameters": true,
+                "bodyParametersJson": "={{ JSON.stringify($json.body) }}",
+                "options": {}
+            },
+            "name": "Canopy_Kakao_Notification",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1600,
+                200
+            ],
+            "id": "node-canopy-kakao"
+        }
+    ],
+    "connections": {
+        "Canopy_Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Canopy_Get_Profile",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Canopy_Get_Profile": {
+            "main": [
+                [
+                    {
+                        "node": "Canopy_If_Status",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Canopy_If_Status": {
+            "main": [
+                [
+                    {
+                        "node": "Canopy_Wait",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "Canopy_Wait": {
+            "main": [
+                [
+                    {
+                        "node": "Canopy_Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Canopy_Email": {
+            "main": [
+                [
+                    {
+                        "node": "Canopy_Solapi_Payload",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Canopy_Solapi_Payload": {
+            "main": [
+                [
+                    {
+                        "node": "Canopy_Kakao_Notification",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

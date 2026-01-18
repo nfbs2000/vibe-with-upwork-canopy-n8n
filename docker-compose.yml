@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - SOLAPI_API_KEY=${SOLAPI_API_KEY}
+      - SOLAPI_API_SECRET=${SOLAPI_API_SECRET}
+      - SOLAPI_PF_ID=${SOLAPI_PF_ID}
+      - SOLAPI_TEMPLATE_ID=${SOLAPI_TEMPLATE_ID}
+      - SOLAPI_FROM=${SOLAPI_FROM}
+      - SOLAPI_TO=${SOLAPI_TO}
+      - SOLAPI_TEMPLATE_TEXT=${SOLAPI_TEMPLATE_TEXT}
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+  canopy-crm-mock:
+    build: ./canopy-crm-mock
+    restart: always
+    ports:
+      - "3080:3080"
+
+volumes:
+  n8n_data:
