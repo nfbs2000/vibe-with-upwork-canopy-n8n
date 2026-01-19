@@ -1,20 +1,20 @@
 # Requirements Summary
 
 ## Goal
-When n8n receives a webhook, check the client profile in Canopy Tax CRM and send a notification if a file or specific value exists.
+n8n listens to Canopy notification emails (Email-to-Webhook) and sends a notification if a file or specific value exists in the client profile.
 
 ## Core flow
-1. n8n receives a webhook.
-2. A script connects to Canopy Tax CRM and checks the client profile.
-3. If a file or value exists, fetch that value.
-4. Send a "file exists" signal back to n8n.
-5. Wait for an additional signal from n8n, then send KakaoTalk or email.
+1. Canopy sends an email when a client uploads a file or a request status changes.
+2. n8n Gmail Trigger detects the email.
+3. Parse the email to extract client identifiers (ID/email/name).
+4. Fetch the client profile (for contact info and optional status checks).
+5. Send KakaoTalk or email (optionally gated by a Custom Field).
 
 ## Inputs/Outputs
-- Input: n8n webhook, client identifier (e.g., client_id)
-- Output: file-exists flag, value, notification result
+- Input: email event, parsed client identifier
+- Output: detection result, notification result
 
 ## Items to confirm
-- Whether "file" can be queried via the Public API
-- Whether "value" means a Custom Field
+- Email sender and subject patterns used by Canopy
+- Whether a Custom Field will be used as a final gate (optional)
 - Final recipient (client vs agent) and notification channel

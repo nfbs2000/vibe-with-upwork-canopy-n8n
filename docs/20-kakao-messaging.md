@@ -30,7 +30,7 @@ Signature rules (per docs)
       "to": "01012345678",
       "from": "029302266",
       "type": "ATA",
-      "text": "Profile value changed: Uploaded",
+      "text": "Canopy update: Uploaded",
       "kakaoOptions": {
         "pfId": "PFXXXXXXXXXXXXXXXX",
         "templateId": "TEMPLATE_XXXXXXXX",
@@ -46,8 +46,18 @@ Signature rules (per docs)
 ## n8n workflow location
 - Workflow: `workflows/n8n-canopy-workflow.json`
 - Nodes
-  - `Build Solapi Payload`: build Authorization and request body
-  - `Kakao Notification (Solapi)`: call SOLAPI API
+  - `Canopy_Solapi_Payload`: build Authorization and request body
+  - `Canopy_Kakao_Notification`: call SOLAPI API
+
+## Manual test button in n8n
+For a quick demo, the workflow includes a manual trigger that sends a Kakao message immediately.
+
+Steps:
+1. Open the workflow in n8n.
+2. Click **Execute workflow** (this runs the `Kakao_Manual_Button` trigger).
+3. The message is sent using the same SOLAPI credentials.
+
+The manual path uses `SOLAPI_TO` as the recipient unless a `to` value is provided in the `Kakao_Manual_Input` node.
 
 ## Required environment variables (n8n container)
 - `SOLAPI_API_KEY`
@@ -63,3 +73,13 @@ Signature rules (per docs)
 - `variables` keys must match template variable names
 - Sender number (`from`) must be registered and approved
 - Recipient number is pulled from CRM `phones` (primary first), otherwise `SOLAPI_TO`
+- For tax workflows, email is often the primary channel; Kakao is optional when the client prefers it.
+
+## Signup and send checklist
+1. Create a Kakao Business Channel.
+2. Create an Alimtalk template and wait for approval.
+3. Create a SOLAPI account and verify the business.
+4. Register the sender phone number in SOLAPI.
+5. Copy `pfId` and `templateId` into environment variables.
+6. Set `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `SOLAPI_FROM`, and `SOLAPI_TO`.
+7. Execute the manual trigger in n8n to verify delivery.

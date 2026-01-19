@@ -6,9 +6,11 @@ This document summarizes the n8n + Canopy Public API mock system delivered for A
 - Infrastructure: `docker-compose.yml` runs n8n and the mock server together
 - API analysis:
   - No file/document endpoints in `specs/canopy-public-api-v3.yaml`
-  - The "file or value" condition is determined by a Custom Field value
+  - Email notifications are used as event signals; Custom Fields remain optional for internal state
 - n8n workflow:
-  - Webhook receive -> client profile lookup -> Custom Field check -> Email/Kakao notification (SOLAPI)
+  - Gmail Trigger -> email parsing -> client lookup -> Email/Kakao notification (SOLAPI)
+- Channel guidance:
+  - Email is the default for tax workflows; Kakao is optional for Korean clients
 
 ## 2. Key files
 - `docker-compose.yml`: container runtime config

@@ -19,9 +19,17 @@ docker compose up --build -d
 - `specs/`: API specification files
 - `workflows/`: n8n workflow templates
 
-## Documentation
+## Deployment Recommendation: n8n Cloud (App)
 
-Start here: [Documentation Index](./docs/00-index.md)
+For production stability and ease of management (especially for Gmail OAuth and credential handling), we strongly recommend using the **n8n Cloud (SaaS)** version rather than a self-hosted Docker instance.
+
+- **Stability**: Managed directly by n8n, ensuring 24/7 uptime.
+- **Ease of Use**: One-click authentication for Gmail/Google Sheets.
+- **Monitoring**: Built-in dashboard to view execution history and manage manual approvals.
+- **Maintenance**: No server updates or security patches required.
+
+## Documentation Structure
+re: [Documentation Index](./docs/00-index.md)
 
 - [Requirements Summary](./docs/01-requirements.md)
 - [Implementation Plan](./docs/02-implementation-plan.md)
@@ -29,7 +37,11 @@ Start here: [Documentation Index](./docs/00-index.md)
 - [Canopy Public API v3 Business Flow](./docs/04-api-business-flow.md)
 - [Canopy File Upload Summary](./docs/10-file-upload-guide.md)
 - [Canopy File Download Summary](./docs/11-file-download-guide.md)
+- [File Upload SOP (Manual Workflow - KR)](./docs/10-file-upload-sop.md)
+- [File Upload SOP (Manual Workflow - EN)](./docs/10-file-upload-sop_en.md)
 - [Kakao Alimtalk Integration (SOLAPI)](./docs/20-kakao-messaging.md)
+- [Canopy API Issue Summary (KR)](./docs/99-canopy-api-issue-summary_kr.md)
+- [Canopy API Issue Summary (EN)](./docs/99-canopy-api-issue-summary_en.md)
 - [Work Report](./docs/90-report.md)
 - [Customer Summary](./docs/95-customer-summary.md)
 
@@ -45,4 +57,5 @@ Start here: [Documentation Index](./docs/00-index.md)
 
 - **API Gap**: Canopy Public API v3 does not currently expose direct file/document endpoints.
 - **Trigger Logic**: The "File Existence" check is simulated using **Custom Field** values (e.g., `field_upload_status === 'Uploaded'`).
+- **Email-to-Webhook**: The workflow listens to Canopy notification emails via Gmail Trigger and treats them as event signals.
 - **Environment Variables**: Make sure to set your Solapi and Email credentials in the `docker-compose.yml` file.

@@ -3,96 +3,50 @@
     "nodes": [
         {
             "parameters": {
-                "httpMethod": "POST",
-                "path": "canopy-trigger",
-                "options": {}
-            },
-            "name": "Canopy_Webhook",
-            "type": "n8n-nodes-base.webhook",
-            "typeVersion": 1,
-            "position": [
-                100,
-                300
-            ],
-            "id": "node-canopy-webhook"
-        },
-        {
-            "parameters": {
-                "url": "=http://canopy-crm-mock:3080/public/v3/clients/{{ $json.body?.client_id || $json.body?.clientId || $json.client_id || $json.clientId || 'client_1' }}",
+                "url": "=http://canopy-crm-mock:3080/public/v3/clients/{{ $json.client_id || $json.id }}",
                 "options": {}
             },
             "name": "Canopy_Get_Profile",
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.1,
             "position": [
-                350,
-                300
+                1350,
+                240
             ],
+            "notes": "Fetches client profile from Canopy API to get phone number and details.",
             "id": "node-canopy-get-profile"
         },
         {
             "parameters": {
-                "conditions": {
-                    "string": [
-                        {
-                            "value1": "={{ ($json.client?.custom_fields || []).find(f => f.field_id === 'field_upload_status')?.value }}",
-                            "operation": "equal",
-                            "value2": "Uploaded"
-                        }
-                    ]
-                }
-            },
-            "name": "Canopy_If_Status",
-            "type": "n8n-nodes-base.if",
-            "typeVersion": 1,
-            "position": [
-                600,
-                300
-            ],
-            "id": "node-canopy-if"
-        },
-        {
-            "parameters": {
-                "resume": "webhook",
-                "webhookSuffix": "canopy-notify"
-            },
-            "name": "Canopy_Wait",
-            "type": "n8n-nodes-base.wait",
-            "typeVersion": 1,
-            "position": [
-                850,
-                200
-            ],
-            "id": "node-canopy-wait"
-        },
-        {
-            "parameters": {
                 "fromEmail": "annie@example.com",
-                "toEmail": "={{ $(\"Canopy_Get_Profile\").first().json.client?.email || 'user@example.com' }}",
+                "toEmail": "={{ $json.client?.email || \"user@example.com\" }}",
                 "subject": "Status Change in Canopy",
-                "text": "=A new value has been detected in your Canopy profile for client: {{ $(\"Canopy_Get_Profile\").first().json.client?.name }}\n\nStatus: {{ ($(\"Canopy_Get_Profile\").first().json.client?.custom_fields || []).find(f => f.field_id === 'field_upload_status')?.value }}",
+                "text": "=A new Canopy notification was received for client: {{ $json.client?.name }}\n\nStatus: {{ ($json.client?.custom_fields || []).find(f => f.field_id === 'field_upload_status')?.value || $(\"Canopy_Parse_Email\").first().json.subject || 'Email Event' }}",
                 "options": {}
             },
             "name": "Canopy_Email",
             "type": "n8n-nodes-base.emailSend",
             "typeVersion": 2,
             "position": [
-                1100,
-                200
+                1850,
+                240
             ],
+            "notes": "Optional: Ends email to staff or client as a backup notification.",
             "id": "node-canopy-email"
         },
         {
             "parameters": {
-                "jsCode": "const crypto = require('crypto');\n\nconst apiKey = process.env.SOLAPI_API_KEY;\nconst apiSecret = process.env.SOLAPI_API_SECRET;\nconst pfId = process.env.SOLAPI_PF_ID;\nconst templateId = process.env.SOLAPI_TEMPLATE_ID;\nconst from = process.env.SOLAPI_FROM;\nconst templateText = process.env.SOLAPI_TEMPLATE_TEXT;\n\n// Canopy_Get_Profile 노드 데이터 참조\nconst clientNode = $(\"Canopy_Get_Profile\").first().json.client || {};\nconst statusValue = (clientNode.custom_fields || []).find(f => f.field_id === 'field_upload_status')?.value || 'Unknown';\n\nconst primaryPhone = (clientNode.phones || []).find(p => p.is_primary)?.number;\nconst anyPhone = (clientNode.phones || []).find(p => p.number)?.number;\nconst to = primaryPhone || anyPhone || clientNode.phone || clientNode.phone_number || process.env.SOLAPI_TO;\n\nif (!apiKey || !apiSecret || !pfId || !templateId || !from || !to) {\n  throw new Error('Missing SOLAPI_* environment variables or recipient phone');\n}\n\nconst text = templateText || `프로필 값이 변경되었습니다: ${statusValue}`;\n\nconst dateTime = new Date().toISOString();\nconst salt = crypto.randomBytes(16).toString('hex');\nconst signature = crypto.createHmac('sha256', apiSecret).update(dateTime + salt).digest('hex');\nconst authHeader = `HMAC-SHA256 apiKey=${apiKey}, date=${dateTime}, salt=${salt}, signature=${signature}`;\n\nconst body = {\n  messages: [\n    {\n      to,\n      from,\n      type: 'ATA',\n      text,\n      kakaoOptions: {\n        pfId,\n        templateId,\n        variables: {\n          status: statusValue\n        }\n      }\n    }\n  ]\n};\n\nreturn { authHeader, body };"
+                "jsCode": "const crypto = require('crypto');\n\nconst apiKey = process.env.SOLAPI_API_KEY;\nconst apiSecret = process.env.SOLAPI_API_SECRET;\nconst pfId = process.env.SOLAPI_PF_ID;\nconst templateId = process.env.SOLAPI_TEMPLATE_ID;\nconst from = process.env.SOLAPI_FROM;\nconst templateText = process.env.SOLAPI_TEMPLATE_TEXT;\n\nconst input = $json || {};\nconst clientNode = input.client || input;\nlet emailSubject = '';\ntry {\n  emailSubject = $(\"Canopy_Parse_Email\").first().json.subject || '';\n} catch (error) {\n  emailSubject = '';\n}\n\nconst statusValue =\n  (clientNode.custom_fields || []).find(f => f.field_id === 'field_upload_status')?.value ||\n  clientNode.status ||\n  input.status ||\n  emailSubject ||\n  'Email Event';\n\nconst primaryPhone = (clientNode.phones || []).find(p => p.is_primary)?.number;\nconst anyPhone = (clientNode.phones || []).find(p => p.number)?.number;\nconst to =\n  input.to ||\n  clientNode.to ||\n  primaryPhone ||\n  anyPhone ||\n  clientNode.phone ||\n  clientNode.phone_number ||\n  process.env.SOLAPI_TO;\n\nif (!apiKey || !apiSecret || !pfId || !templateId || !from || !to) {\n  throw new Error('Missing SOLAPI_* environment variables or recipient phone');\n}\n\nconst text = templateText || `Canopy update: ${statusValue}`;\n\nconst dateTime = new Date().toISOString();\nconst salt = crypto.randomBytes(16).toString('hex');\nconst signature = crypto.createHmac('sha256', apiSecret).update(dateTime + salt).digest('hex');\nconst authHeader = `HMAC-SHA256 apiKey=${apiKey}, date=${dateTime}, salt=${salt}, signature=${signature}`;\n\nconst body = {\n  messages: [\n    {\n      to,\n      from,\n      type: 'ATA',\n      text,\n      kakaoOptions: {\n        pfId,\n        templateId,\n        variables: {\n          status: statusValue\n        }\n      }\n    }\n  ]\n};\n\nreturn { authHeader, body };\n",
+                "mode": "runOnceForEachItem"
             },
             "name": "Canopy_Solapi_Payload",
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                1350,
-                200
+                2100,
+                240
             ],
+            "notes": "Generates the HMAC authentication header and payload for Solapi (KakaoTalk).",
             "id": "node-canopy-solapi-payload"
         },
         {
@@ -121,14 +75,216 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.1,
             "position": [
-                1600,
-                200
+                2350,
+                240
             ],
+            "notes": "Sends the actual KakaoTalk AlimTalk message via Solapi API.",
             "id": "node-canopy-kakao"
+        },
+        {
+            "parameters": {},
+            "name": "Kakao_Manual_Button",
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "position": [
+                100,
+                100
+            ],
+            "id": "node-kakao-manual-trigger"
+        },
+        {
+            "parameters": {
+                "values": {
+                    "string": [
+                        {
+                            "name": "status",
+                            "value": "Manual test"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "name": "Kakao_Manual_Input",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 2,
+            "position": [
+                350,
+                100
+            ],
+            "id": "node-kakao-manual-input"
+        },
+        {
+            "parameters": {
+                "resource": "message",
+                "operation": "watch",
+                "options": {
+                    "q": "from:notifications@canopytax.com subject:(\"New file uploaded\" \"Needs Review\")"
+                }
+            },
+            "name": "Canopy_Email_Trigger",
+            "type": "n8n-nodes-base.gmailTrigger",
+            "typeVersion": 1,
+            "position": [
+                100,
+                300
+            ],
+            "notes": "Triggers when a 'New File' email arrives from Canopy (e.g., subject contains 'New file uploaded')",
+            "id": "node-canopy-email-trigger"
+        },
+        {
+            "parameters": {
+                "jsCode": "const payload = $json.payload || {};\nconst headers = $json.headers || payload.headers || [];\nconst getHeader = (name) => headers.find(h => h.name?.toLowerCase() === name)?.value;\n\nconst subject = $json.subject || getHeader('subject') || '';\nconst from = $json.from || getHeader('from') || '';\n\nlet decodedBody = '';\nconst bodyData = payload?.body?.data;\nif (bodyData) {\n  const normalized = bodyData.replace(/-/g, '+').replace(/_/g, '/');\n  try {\n    decodedBody = Buffer.from(normalized, 'base64').toString('utf8');\n  } catch (error) {\n    decodedBody = '';\n  }\n}\n\nconst textPlain = $json.textPlain || $json.text || decodedBody || '';\nconst textHtml = $json.textHtml || '';\nconst snippet = $json.snippet || '';\nconst raw = [subject, textPlain, textHtml, snippet].filter(Boolean).join('\\n');\n\nconst idMatch = raw.match(/client[_-]?id[:\\s]+([a-zA-Z0-9_-]+)/i);\nconst client_id = idMatch ? idMatch[1] : null;\n\nconst emailMatch = raw.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/i);\nconst client_email = emailMatch ? emailMatch[0] : null;\n\nconst nameMatch = raw.match(/client\\s*name[:\\s]+([A-Za-z\\s'\\-]+)/i);\nconst client_name = nameMatch ? nameMatch[1].trim() : null;\n\nreturn [{\n  json: {\n    client_id,\n    client_email,\n    client_name,\n    subject,\n    from,\n    raw\n  }\n}];\n"
+            },
+            "name": "Canopy_Parse_Email",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                350,
+                300
+            ],
+            "notes": "Parses the email body to extract Client ID, Email, or Name using Regex.",
+            "id": "node-canopy-parse-email"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.client_id }}",
+                            "operation": "isNotEmpty"
+                        }
+                    ]
+                }
+            },
+            "name": "Canopy_Has_Client_Id",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                600,
+                300
+            ],
+            "id": "node-canopy-has-client-id"
+        },
+        {
+            "parameters": {
+                "jsCode": "const client_email = $json.client_email;\nconst client_name = $json.client_name;\n\nif (client_email) {\n  return [{ json: { q: client_email, query_field: 'email' } }];\n}\nif (client_name) {\n  return [{ json: { q: client_name, query_field: 'name' } }];\n}\n\nthrow new Error('No client identifier found in email (client_id, email, or name).');\n"
+            },
+            "name": "Canopy_Build_Search",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                420
+            ],
+            "id": "node-canopy-build-search"
+        },
+        {
+            "parameters": {
+                "url": "=http://canopy-crm-mock:3080/public/v3/clients/search?q={{ $json.q }}&query_field={{ $json.query_field }}&limit=1",
+                "options": {}
+            },
+            "name": "Canopy_Search_Clients",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1100,
+                420
+            ],
+            "id": "node-canopy-search-clients"
+        },
+        {
+            "parameters": {
+                "jsCode": "const clients = $json.clients || [];\nconst client = clients[0];\nif (!client || !client.id) {\n  throw new Error('No client matched search results.');\n}\nreturn [{ json: { client_id: client.id } }];\n"
+            },
+            "name": "Canopy_Pick_Client",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1350,
+                420
+            ],
+            "id": "node-canopy-pick-client"
+        },
+        {
+            "parameters": {
+                "resume": "webhook",
+                "webhookSuffix": "canopy-approve"
+            },
+            "name": "Canopy_Wait_Approval",
+            "type": "n8n-nodes-base.wait",
+            "typeVersion": 1,
+            "position": [
+                1600,
+                240
+            ],
+            "notes": "Pauses workflow for manual verification. Staff must click the link to confirm before sending notification.",
+            "id": "node-canopy-wait-approval"
         }
     ],
     "connections": {
-        "Canopy_Webhook": {
+        "Canopy_Email_Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Canopy_Parse_Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Canopy_Parse_Email": {
+            "main": [
+                [
+                    {
+                        "node": "Canopy_Has_Client_Id",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Canopy_Has_Client_Id": {
+            "main": [
+                [
+                    {
+                        "node": "Canopy_Get_Profile",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Canopy_Build_Search",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Canopy_Build_Search": {
+            "main": [
+                [
+                    {
+                        "node": "Canopy_Search_Clients",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Canopy_Search_Clients": {
+            "main": [
+                [
+                    {
+                        "node": "Canopy_Pick_Client",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Canopy_Pick_Client": {
             "main": [
                 [
                     {
@@ -143,26 +299,14 @@
             "main": [
                 [
                     {
-                        "node": "Canopy_If_Status",
+                        "node": "Canopy_Wait_Approval",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Canopy_If_Status": {
-            "main": [
-                [
-                    {
-                        "node": "Canopy_Wait",
-                        "type": "main",
-                        "index": 0
-                    }
-                ],
-                []
-            ]
-        },
-        "Canopy_Wait": {
+        "Canopy_Wait_Approval": {
             "main": [
                 [
                     {
@@ -189,6 +333,28 @@
                 [
                     {
                         "node": "Canopy_Kakao_Notification",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Kakao_Manual_Button": {
+            "main": [
+                [
+                    {
+                        "node": "Kakao_Manual_Input",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Kakao_Manual_Input": {
+            "main": [
+                [
+                    {
+                        "node": "Canopy_Solapi_Payload",
                         "type": "main",
                         "index": 0
                     }
