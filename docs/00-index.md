@@ -15,6 +15,7 @@ This folder organizes documentation for the Canopy Tax CRM + n8n automation proj
 - `docs/95-customer-summary.md`: Customer-ready summary
 - `docs/99-canopy-api-issue-summary_kr.md`: Deep-dive issue summary (Korean)
 - `docs/99-canopy-api-issue-summary_en.md`: Deep-dive issue summary (English)
+- `docs/strategic-guide-canopy-tax-crm-automation.pdf`: Strategic guide (PDF)
 
 Reference files
 - `specs/canopy-public-api-v3.yaml`: Canopy Public API v3 spec

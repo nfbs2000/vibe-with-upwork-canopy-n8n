@@ -1,6 +1,6 @@
 # Canopy Tax CRM + n8n Automation
 
-This project integrates **Canopy Tax CRM** with **n8n** to monitor client profile updates (file uploads or specific field values) and trigger notifications when conditions are met. Due to Public API v3 limitations, the system uses **Custom Field values** to detect changes and includes a **CRM Mock Server** for local development and testing.
+This project integrates **Canopy Tax CRM** with **n8n** to monitor client activity and trigger notifications when conditions are met. Due to Public API v3 limitations, the system uses **Canopy notification emails** as event signals, with **Custom Fields** optional for internal status tracking, and includes a **CRM Mock Server** for local development and testing.
 
 ![n8n Workflow Overview](./images/image.png)
 
@@ -39,6 +39,7 @@ re: [Documentation Index](./docs/00-index.md)
 - [Canopy File Download Summary](./docs/11-file-download-guide.md)
 - [File Upload SOP (Manual Workflow - KR)](./docs/10-file-upload-sop.md)
 - [File Upload SOP (Manual Workflow - EN)](./docs/10-file-upload-sop_en.md)
+- [Strategic Guide (PDF)](./docs/strategic-guide-canopy-tax-crm-automation.pdf)
 - [Kakao Alimtalk Integration (SOLAPI)](./docs/20-kakao-messaging.md)
 - [Canopy API Issue Summary (KR)](./docs/99-canopy-api-issue-summary_kr.md)
 - [Canopy API Issue Summary (EN)](./docs/99-canopy-api-issue-summary_en.md)
@@ -56,6 +57,6 @@ re: [Documentation Index](./docs/00-index.md)
 ## Important Notes
 
 - **API Gap**: Canopy Public API v3 does not currently expose direct file/document endpoints.
-- **Trigger Logic**: The "File Existence" check is simulated using **Custom Field** values (e.g., `field_upload_status === 'Uploaded'`).
+- **Trigger Logic**: Canopy notification emails act as the event signal; Custom Fields are optional for internal state.
 - **Email-to-Webhook**: The workflow listens to Canopy notification emails via Gmail Trigger and treats them as event signals.
 - **Environment Variables**: Make sure to set your Solapi and Email credentials in the `docker-compose.yml` file.

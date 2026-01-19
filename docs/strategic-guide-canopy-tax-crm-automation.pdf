@@ -1,0 +1,160 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 2543 >>
+stream
+BT
+/F1 12 Tf
+50 792 Td
+14 TL
+(Strategic Guide for Canopy Tax CRM Automation) Tj
+T*
+(Overcoming API Limitations & Defining Operational Processes) Tj
+T*
+(Prepared by: Yunho) Tj
+T*
+T*
+(Status: Pre-implementation Analysis) Tj
+T*
+T*
+(1. The Technical Reality) Tj
+T*
+(After analyzing the Canopy Tax Public API \(v3\), the following fact is confirmed:) Tj
+T*
+T*
+(No Direct File Trigger: The API does NOT provide any way to automatically detect or "push") Tj
+T*
+(a signal when a client uploads a file.) Tj
+T*
+T*
+(Vendor Restriction: This is a strategic limitation by Canopy. Therefore, we cannot rely on) Tj
+T*
+(the API alone to know when a file exists.) Tj
+T*
+T*
+(2. Two Operational Solutions \(Decision Required\)) Tj
+T*
+(To bridge this gap, you must choose one of the following two "signal" methods:) Tj
+T*
+T*
+(Option A: Manual Field Update \(The "Status" Method\)) Tj
+T*
+(How it works: Your staff must manually update a "Custom Field" in Canopy \(e.g., set File) Tj
+T*
+(Status to 'Uploaded'\) after they see a file.) Tj
+T*
+T*
+(Pros: High accuracy since a human verifies it first.) Tj
+T*
+T*
+(Cons: High risk of human error. If staff forget to update the field, the automation never) Tj
+T*
+(starts.) Tj
+T*
+T*
+(Option B: Email-to-Webhook \(The "Sensor" Method\) - Recommended) Tj
+T*
+(How it works: We turn on Canopy's "Client uploads a file" email notification. My system) Tj
+T*
+(\(n8n\) acts as a digital sensor that "listens" to your inbox and triggers the automation.) Tj
+T*
+T*
+(Pros: Much closer to full automation. No extra steps for your staff in the CRM.) Tj
+T*
+T*
+(Cons: Canopy emails are inconsistent. They mix Portal uploads, Secure Link uploads, and) Tj
+T*
+(other alerts. Designing a precise filter to separate these takes significant development) Tj
+T*
+(and testing time.) Tj
+T*
+T*
+(3. Recommended Workflow: The "Human-in-the-loop" Filter) Tj
+T*
+(Because the API is unreliable, 100% full automation might send wrong messages to clients.) Tj
+T*
+(I recommend this Hybrid Process:) Tj
+T*
+T*
+(Signal: Canopy sends an email alert \(Option B\).) Tj
+T*
+T*
+(Processing: n8n parses the email to find the Client ID and details.) Tj
+T*
+T*
+(Verification \(The Filter\): The system asks a staff member \(via a simple button or link\) to) Tj
+T*
+("Approve" the notification.) Tj
+T*
+T*
+(Final Action: Once approved, the KakaoTalk/Email is sent to the client.) Tj
+T*
+T*
+(4. Why This Requires Significant Time) Tj
+T*
+(This project is not about "connecting dots"; it is about "refining raw, unreliable data) Tj
+T*
+(into a stable business process.") Tj
+T*
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 598 >>
+stream
+BT
+/F1 12 Tf
+50 792 Td
+14 TL
+T*
+(Pattern Analysis: We must analyze various Canopy email subjects and bodies to ensure the) Tj
+T*
+("sensor" works every time.) Tj
+T*
+T*
+(Exception Handling: We must build logic for multiple file uploads, missing client names,) Tj
+T*
+(or delayed emails.) Tj
+T*
+T*
+(Operational SOP: We need to align your staff's behavior with the system's logic.) Tj
+T*
+T*
+(5. Conclusion) Tj
+T*
+(The success of this project depends on process over code. Please decide if you prefer the) Tj
+T*
+(Manual Update \(A\) or Email Sensor \(B\) model so we can define the final scope.) Tj
+T*
+ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000191 00000 n 
+0000000317 00000 n 
+0000002912 00000 n 
+0000003038 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+3687
+%%EOF
